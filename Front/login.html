@@ -10,7 +10,19 @@
       </label>
       <label>
         <span>Password</span>
-        <input type="password" name="password" required>
+        <span class="password-field">
+          <input type="password" name="password" required>
+          <button type="button" class="password-toggle" data-password-toggle aria-label="Show password" title="Show password">
+            <svg class="eye-icon eye-icon-open" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+              <circle cx="12" cy="12" r="2.5"></circle>
+            </svg>
+            <svg class="eye-icon eye-icon-closed" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+              <path d="M3 12c2.3 2.7 5.3 4 9 4s6.7-1.3 9-4"></path>
+              <path d="M5 8.5 3.5 7M9 7 8.5 5M15 7l.5-2M19 8.5 20.5 7"></path>
+            </svg>
+          </button>
+        </span>
       </label>
       <button type="submit">Login</button>
     </form>

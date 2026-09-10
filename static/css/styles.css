@@ -178,6 +178,8 @@ h2 { font-size: 1.2rem; }
 }
 
 label { display: grid; gap: 0.45rem; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.password-field { position: relative; display: block; }
+.password-field input { width: 100%; padding-right: 4.5rem; }
 input, select, button {
   font: inherit;
   min-height: 2.65rem;
@@ -196,6 +198,23 @@ button {
 }
 button.danger { background: var(--danger); }
 button:hover { filter: brightness(1.04); }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+  transform: translateY(-50%);
+  background: transparent;
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.password-toggle:hover { background: #edf5ff; filter: none; }
+.eye-icon { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.eye-icon-closed { display: none; }
+.password-toggle.is-visible .eye-icon-open { display: none; }
+.password-toggle.is-visible .eye-icon-closed { display: block; }
 
 .table-wrap { overflow-x: auto; }
 .table-wrap table {
