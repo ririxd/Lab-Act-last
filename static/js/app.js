@@ -1,4 +1,15 @@
+const clearAuthForms = () => {
+  document.querySelectorAll('form[data-clear-on-load]').forEach((form) => {
+    form.reset();
+    form.querySelectorAll('input').forEach((input) => {
+      input.value = '';
+    });
+  });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+  clearAuthForms();
+
   const flashEls = document.querySelectorAll('.flash');
   flashEls.forEach((flash) => {
     setTimeout(() => {
@@ -8,3 +19,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3500);
   });
 });
+
+window.addEventListener('pageshow', clearAuthForms);

@@ -7,7 +7,7 @@ from database import AssetStore
 
 
 def create_app(database_path=None):
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="Front")
     app.config["SECRET_KEY"] = "lab-tracker-dev"
     app.config["AUTH"] = AuthController(database_path)
     app.config["STORE"] = AssetStore(database_path)
@@ -20,6 +20,14 @@ def create_app(database_path=None):
         if "user" not in session:
             return redirect(url_for("login"))
         return None
+
+    @app.after_request
+    def prevent_auth_page_caching(response):
+        if request.endpoint in {"login", "register", "logout"}:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
     @app.route("/")
     def index():
@@ -40,8 +48,11 @@ def create_app(database_path=None):
             flash(message, "error")
         return render_template("login.html")
 
-    @app.route("/register", methods=["POST"])
+    @app.route("/register", methods=["GET", "POST"])
     def register():
+        if request.method == "GET":
+            return render_template("register.html")
+
         username = request.form.get("username", "")
         email = request.form.get("email", "")
         password = request.form.get("password", "")
@@ -168,3 +179,7 @@ def create_app(database_path=None):
 
 
 app = create_app()
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000, debug=True)

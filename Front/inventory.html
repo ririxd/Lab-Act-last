@@ -1,28 +1,67 @@
 {% extends 'base.html' %}
 {% block title %}Inventory{% endblock %}
 {% block content %}
-  <section class="panel">
-    <div class="panel-header">
+  <section class="panel technician-page">
+    <div class="page-heading">
       <div>
-        <p class="eyebrow">Signed in</p>
-        <h1>{{ user['username'] }} · {{ user['role'] }}</h1>
+        <p class="eyebrow">Operations workspace</p>
+        <h1>Inventory control</h1>
+        <p class="page-subtitle">Manage laboratory equipment, availability, and active requests.</p>
+      </div>
+      <div class="heading-meta">
+        <span class="status-dot"></span>
+        <span>Signed in as <strong>{{ user['username'] }}</strong></span>
+      </div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <span class="metric-label">Tracked assets</span>
+        <strong class="metric-value">{{ assets|length }}</strong>
+        <span class="metric-note">Items in inventory</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Pending requests</span>
+        <strong class="metric-value">{{ pending|length }}</strong>
+        <span class="metric-note">Awaiting review</span>
+      </div>
+      <div class="metric-card metric-card-accent">
+        <span class="metric-label">Access level</span>
+        <strong class="metric-value">{{ user['role']|title }}</strong>
+        <span class="metric-note">Inventory management</span>
       </div>
     </div>
 
     {% if user['role'] in ['ADMIN', 'TECHNICIAN'] %}
-    <form method="post" action="{{ url_for('inventory') }}" class="card form-grid">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Quick action</p>
+        <h2>Register an asset</h2>
+      </div>
+      <span class="section-caption">Add equipment to the shared inventory</span>
+    </div>
+    <form method="post" action="{{ url_for('inventory') }}" class="card asset-form">
       <input type="hidden" name="action" value="add_asset">
-      <label><span>Asset tag</span><input type="text" name="asset_tag" required></label>
-      <label><span>Name</span><input type="text" name="name" required></label>
-      <label><span>Category</span><input type="text" name="category" required></label>
-      <label><span>Quantity</span><input type="number" name="quantity" min="1" required></label>
-      <label><span>Location</span><input type="text" name="location" required></label>
-      <button type="submit">Add asset</button>
+      <div class="asset-form-fields">
+        <label><span>Asset tag</span><input type="text" name="asset_tag" placeholder="e.g. MIC-104" required></label>
+        <label><span>Name</span><input type="text" name="name" placeholder="Equipment name" required></label>
+        <label><span>Category</span><input type="text" name="category" placeholder="e.g. Audio" required></label>
+        <label><span>Quantity</span><input type="number" name="quantity" min="1" placeholder="0" required></label>
+        <label><span>Location</span><input type="text" name="location" placeholder="Room or cabinet" required></label>
+      </div>
+      <button type="submit" class="primary-action">Add asset</button>
     </form>
     {% endif %}
 
-    <div class="table-wrap card">
-      <table>
+    <div class="section-heading inventory-heading">
+      <div>
+        <p class="eyebrow">Live register</p>
+        <h2>All equipment</h2>
+      </div>
+      <span class="section-caption">Availability updates as transactions are recorded</span>
+    </div>
+    <div class="table-wrap card inventory-surface">
+      <table class="inventory-table">
         <thead>
           <tr>
             <th>ID</th>
@@ -71,6 +110,8 @@
                 </form>
               </td>
             </tr>
+          {% else %}
+            <tr><td colspan="10" class="empty-state">No assets have been added yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

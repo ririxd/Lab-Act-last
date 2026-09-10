@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Lab Asset Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="{{ url_for('inventory') if session.get('user') else url_for('login') }}">
+          <span class="brand-mark">LA</span>
+          <span>
+            <strong>Laboratory Asset Tracker</strong>
+            <small>Equipment operations</small>
+          </span>
+        </a>
+      {% if session.get('user') %}
+        <nav class="nav" aria-label="Primary navigation">
+          <a class="nav-link active" href="{{ url_for('inventory') }}">Inventory</a>
+          <a class="nav-link" href="{{ url_for('student') }}">My Borrowings</a>
+          <a class="nav-link" href="{{ url_for('history') }}">History</a>
+          {% if session['user']['role'] in ['ADMIN', 'TECHNICIAN'] %}
+          <a class="nav-link" href="{{ url_for('export_inventory') }}">Export CSV</a>
+          {% endif %}
+        </nav>
+        <div class="account-menu">
+          <span class="account-avatar">{{ session['user']['username'][0]|upper }}</span>
+          <span class="account-details">
+            <strong>{{ session['user']['username'] }}</strong>
+            <small>{{ session['user']['role']|title }}</small>
+          </span>
+          <a class="logout-link" href="{{ url_for('logout') }}">Logout</a>
+        </div>
+      {% endif %}
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>

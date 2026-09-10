@@ -11,7 +11,7 @@ ASSET_STATUSES = ("Available", "Out of Stock", "Under Maintenance", "Lost", "Dam
 
 class AssetStore:
     def __init__(self, database_path=DB_PATH):
-        self.database_path = str(database_path)
+        self.database_path = str(database_path or DB_PATH)
         self.initialize()
 
     def connect(self):

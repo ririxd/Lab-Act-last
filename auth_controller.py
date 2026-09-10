@@ -14,7 +14,7 @@ EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
 class AuthController:
     def __init__(self, database_path=DB_PATH):
-        self.database_path = str(database_path)
+        self.database_path = str(database_path or DB_PATH)
         self.initialize()
 
     def connect(self):

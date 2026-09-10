@@ -1,23 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Login{% endblock %}
+{% block title %}Register{% endblock %}
 {% block content %}
   <section class="auth-panel">
-    <h1>Sign in</h1>
-    <form method="post" action="{{ url_for('login') }}" class="card form-grid">
-      <label>
-        <span>Username</span>
-        <input type="text" name="username" required>
-      </label>
-      <label>
-        <span>Password</span>
-        <input type="password" name="password" required>
-      </label>
-      <button type="submit">Login</button>
-    </form>
-
-    <div class="divider">Create account</div>
-
-    <form method="post" action="{{ url_for('register') }}" class="card form-grid">
+    <p class="eyebrow">New account</p>
+    <h1>Create an account</h1>
+    <form method="post" action="{{ url_for('register') }}" class="card form-grid" autocomplete="off" data-clear-on-load>
       <label>
         <span>Username</span>
         <input type="text" name="username" required>
@@ -39,5 +26,6 @@
       </label>
       <button type="submit">Register</button>
     </form>
+    <p class="auth-link">Already registered? <a href="{{ url_for('login') }}">Sign in here</a>.</p>
   </section>
 {% endblock %}
