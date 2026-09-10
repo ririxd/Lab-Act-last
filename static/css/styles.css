@@ -12,6 +12,8 @@
   --shadow: 0 10px 30px rgba(16, 24, 40, 0.06);
 }
 
+
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -19,6 +21,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   line-height: 1.45;
+  background-color: #000080
 }
 
 .topbar {
