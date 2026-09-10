@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Activity History{% endblock %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Audit trail</p>
+        <h1>History</h1>
+      </div>
+    </div>
+
+    <div class="table-wrap card">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Actor</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for row in activity %}
+          <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

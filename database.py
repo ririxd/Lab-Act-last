@@ -91,17 +91,21 @@ class AssetStore:
                 );
                 """
             )
+
             columns = {row[1] for row in connection.execute("PRAGMA table_info(assets)")}
             if "borrowed_quantity" not in columns:
                 connection.execute("ALTER TABLE assets ADD COLUMN borrowed_quantity INTEGER NOT NULL DEFAULT 0")
+
             checkout_columns = {row[1] for row in connection.execute("PRAGMA table_info(checkouts)")}
             if "checkout_location" not in checkout_columns:
                 connection.execute("ALTER TABLE checkouts ADD COLUMN checkout_location TEXT NOT NULL DEFAULT ''")
             if "due_time" not in checkout_columns:
                 connection.execute("ALTER TABLE checkouts ADD COLUMN due_time TEXT NOT NULL DEFAULT '17:00'")
+
             reservation_columns = {row[1] for row in connection.execute("PRAGMA table_info(reservations)")}
             if "reservation_location" not in reservation_columns:
                 connection.execute("ALTER TABLE reservations ADD COLUMN reservation_location TEXT NOT NULL DEFAULT ''")
+            connection.execute("UPDATE reservations SET status = 'ACTIVE' WHERE status IS NULL OR status = ''")
 
     @staticmethod
     def parse_date(value, label):
@@ -180,7 +184,7 @@ class AssetStore:
         baseline = connection.execute("SELECT borrowed_quantity FROM assets WHERE id = ?", (asset_id,)).fetchone()[0]
         return int(baseline) + int(reserved) + int(checked_out)
 
-    def reserve(self, asset_id, borrower, quantity, start_date, end_date, purpose):
+    def reserve(self, asset_id, borrower, quantity, start_date, end_date, purpose, requires_approval=False):
         start = self.parse_date(start_date, "Start date")
         end = self.parse_date(end_date, "End date")
         if end < start:
@@ -192,6 +196,9 @@ class AssetStore:
             quantity = int(quantity)
         except (TypeError, ValueError) as error:
             raise ValueError("Quantity must be a positive whole number.") from error
+        if quantity < 1:
+            raise ValueError("Quantity must be a positive whole number.")
+
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             asset = connection.execute("SELECT quantity, status FROM assets WHERE id = ?", (asset_id,)).fetchone()
@@ -199,14 +206,54 @@ class AssetStore:
                 raise ValueError("Asset not found.")
             if asset["status"] != "Available":
                 raise ValueError("This asset is not available for reservation.")
-            if quantity < 1 or self._allocated(connection, asset_id, start.isoformat(), end.isoformat()) + quantity > asset["quantity"]:
+
+            start_iso = start.isoformat()
+            end_iso = end.isoformat()
+            reserved = connection.execute(
+                "SELECT COALESCE(SUM(quantity), 0) FROM reservations "
+                "WHERE asset_id = ? AND status IN ('ACTIVE', 'PENDING') AND start_date <= ? AND end_date >= ?",
+                (asset_id, end_iso, start_iso),
+            ).fetchone()[0]
+            checked_out = connection.execute(
+                "SELECT COALESCE(SUM(quantity), 0) FROM checkouts WHERE asset_id = ? AND returned_at IS NULL",
+                (asset_id,),
+            ).fetchone()[0]
+            baseline = connection.execute("SELECT borrowed_quantity FROM assets WHERE id = ?", (asset_id,)).fetchone()[0]
+            if int(baseline) + int(reserved) + int(checked_out) + quantity > asset["quantity"]:
                 raise ValueError("Not enough available quantity for those dates.")
-            connection.execute(
-                "INSERT INTO reservations (asset_id, borrower, quantity, start_date, end_date, purpose, reservation_location) "
-                "SELECT ?, ?, ?, ?, ?, ?, location FROM assets WHERE id = ?",
-                (asset_id, borrower, quantity, start.isoformat(), end.isoformat(), purpose, asset_id),
+
+            status = "PENDING" if requires_approval else "ACTIVE"
+            cursor = connection.execute(
+                "INSERT INTO reservations (asset_id, borrower, quantity, start_date, end_date, purpose, reservation_location, status) "
+                "SELECT ?, ?, ?, ?, ?, ?, location, ? FROM assets WHERE id = ?",
+                (asset_id, borrower, quantity, start_iso, end_iso, purpose, status, asset_id),
             )
-            self._audit(connection, borrower, "RESERVATION_CREATED", f"asset_id={asset_id}")
+            self._audit(connection, borrower, "RESERVATION_CREATED", f"asset_id={asset_id}, status={status}")
+            return cursor.lastrowid
+
+    def approve_reservation(self, reservation_id, approved=True):
+        with self.connect() as connection:
+            reservation = connection.execute("SELECT * FROM reservations WHERE id = ?", (reservation_id,)).fetchone()
+            if not reservation:
+                raise ValueError("Reservation not found.")
+            status = "ACTIVE" if approved else "REJECTED"
+            connection.execute("UPDATE reservations SET status = ? WHERE id = ?", (status, reservation_id))
+            self._audit(connection, "admin", "RESERVATION_UPDATED", f"reservation_id={reservation_id}, status={status}")
+            return status
+
+    def pending_reservations(self):
+        with self.connect() as connection:
+            return connection.execute(
+                "SELECT r.id, a.asset_tag, a.name, r.borrower, r.quantity, r.start_date, r.end_date, r.purpose "
+                "FROM reservations r JOIN assets a ON a.id = r.asset_id WHERE r.status = 'PENDING' ORDER BY r.start_date"
+            ).fetchall()
+
+    def reservations(self):
+        with self.connect() as connection:
+            return connection.execute(
+                "SELECT r.id, a.asset_tag, a.name, r.borrower, r.quantity, r.start_date, r.end_date, r.purpose "
+                "FROM reservations r JOIN assets a ON a.id = r.asset_id WHERE r.status = 'ACTIVE' ORDER BY r.start_date"
+            ).fetchall()
 
     def checkout(self, asset_id, borrower, quantity, due_date, checkout_location, due_time="17:00"):
         due = self.parse_date(due_date, "Due date")
@@ -313,14 +360,6 @@ class AssetStore:
             writer.writerow(("ID", "Asset Tag", "Name", "Category", "Total Quantity", "Borrowed", "Borrowable", "Location", "Condition", "Status"))
             writer.writerows(tuple(row) for row in rows)
         return str(target)
-
-
-    def reservations(self):
-        with self.connect() as connection:
-            return connection.execute(
-                "SELECT r.id, a.asset_tag, a.name, r.borrower, r.quantity, r.start_date, r.end_date, r.purpose "
-                "FROM reservations r JOIN assets a ON a.id = r.asset_id WHERE r.status = 'ACTIVE' ORDER BY r.start_date"
-            ).fetchall()
 
     def set_maintenance(self, asset_id, description):
         description = str(description or "").strip()

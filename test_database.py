@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from auth_controller import AuthController
 from database import AssetStore
 
@@ -203,6 +205,35 @@ def test_activity_log_returns_asset_actions(tmp_path):
     activity = store.activity_log()
     assert activity[0][2] == "ASSET_ADDED"
     assert "LAB-016" in activity[0][3]
+
+
+def test_reservation_approval_and_quantity_limits(tmp_path):
+    database_path = tmp_path / "test.db"
+    create_student(database_path, "Ava")
+    create_student(database_path, "Ben")
+    store = AssetStore(database_path)
+    store.add_asset("LAB-017", "Spectrometer", "Analysis", 2, "Room 217")
+
+    today = date.today().isoformat()
+    with pytest.raises(ValueError):
+        store.reserve(1, "Ava", 3, today, today, "Too many", requires_approval=True)
+
+    reservation_id = store.reserve(1, "Ava", 2, today, today, "Approval needed", requires_approval=True)
+    pending = store.pending_reservations()
+    assert len(pending) == 1
+    assert pending[0][3] == "Ava"
+
+    store.approve_reservation(reservation_id, approved=True)
+    approved = store.reservations()
+    assert len(approved) == 1
+    assert approved[0][3] == "Ava"
+
+    try:
+        store.checkout(1, "Ben", 1, today, "Room 217")
+    except ValueError as error:
+        assert "available quantity" in str(error)
+    else:
+        raise AssertionError("Approved reservation did not reserve quantity correctly")
 
 
 def test_inventory_csv_export_is_admin_only(tmp_path):

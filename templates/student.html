@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}My Borrowings{% endblock %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Student dashboard</p>
+        <h1>{{ user['username'] }}</h1>
+      </div>
+    </div>
+
+    <div class="table-wrap card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Asset</th>
+            <th>Name</th>
+            <th>Qty</th>
+            <th>Checked out</th>
+            <th>Due</th>
+            <th>Location</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for checkout in checkouts %}
+            <tr>
+              <td>{{ checkout[0] }}</td>
+              <td>{{ checkout[1] }}</td>
+              <td>{{ checkout[2] }}</td>
+              <td>{{ checkout[3] }}</td>
+              <td>{{ checkout[4] }}</td>
+              <td>{{ checkout[5] }} @ {{ checkout[6] }}</td>
+              <td>{{ checkout[7] }}</td>
+              <td>
+                <form method="post" action="{{ url_for('return_checkout', checkout_id=checkout[0]) }}">
+                  <input type="hidden" name="return_condition" value="Good">
+                  <button type="submit">Return</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
