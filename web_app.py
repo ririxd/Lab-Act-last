@@ -29,6 +29,10 @@ def create_app(database_path=None):
             response.headers["Expires"] = "0"
         return response
 
+    def management_user():
+        user = session.get("user")
+        return user if user and user.get("role") in {"ADMIN", "TECHNICIAN"} else None
+
     @app.route("/")
     def index():
         return redirect(url_for("login"))
@@ -77,6 +81,9 @@ def create_app(database_path=None):
             return redirect(url_for("login"))
 
         if request.method == "POST" and request.form.get("action") == "add_asset":
+            if not management_user():
+                flash("Only administrators and technicians can add assets.", "error")
+                return redirect(url_for("inventory"))
             try:
                 current_app.config["STORE"].add_asset(
                     request.form.get("asset_tag", ""),
@@ -91,20 +98,23 @@ def create_app(database_path=None):
             return redirect(url_for("inventory"))
 
         assets = current_app.config["STORE"].assets()
-        pending = current_app.config["STORE"].pending_reservations()
+        pending = current_app.config["STORE"].pending_reservations() if management_user() else []
         return render_template("inventory.html", user=user, assets=assets, pending=pending)
 
     @app.route("/reserve", methods=["POST"])
     def reserve():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("login"))
         try:
             current_app.config["STORE"].reserve(
                 request.form.get("asset_id"),
-                request.form.get("borrower", ""),
+                user["username"],
                 request.form.get("quantity", 1),
                 request.form.get("start_date"),
                 request.form.get("end_date"),
                 request.form.get("purpose", ""),
-                requires_approval=bool(request.form.get("requires_approval")),
+                requires_approval=user["role"] == "STUDENT" or bool(request.form.get("requires_approval")),
             )
             flash("Reservation created.", "success")
         except ValueError as exc:
@@ -113,6 +123,12 @@ def create_app(database_path=None):
 
     @app.route("/checkout", methods=["POST"])
     def checkout():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("login"))
+        if user["role"] not in {"ADMIN", "TECHNICIAN"}:
+            flash("Only administrators and technicians can complete checkouts.", "error")
+            return redirect(url_for("inventory"))
         try:
             current_app.config["STORE"].checkout(
                 request.form.get("asset_id"),
@@ -138,6 +154,9 @@ def create_app(database_path=None):
 
     @app.route("/approve_reservation/<int:reservation_id>", methods=["POST"])
     def approve_reservation(reservation_id):
+        if not management_user():
+            flash("Only administrators and technicians can approve requests.", "error")
+            return redirect(url_for("student"))
         try:
             action = request.form.get("decision", "approve")
             approved = action == "approve"

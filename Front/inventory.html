@@ -90,15 +90,20 @@
               <td>
                 <form method="post" action="{{ url_for('reserve') }}" class="inline-form">
                   <input type="hidden" name="asset_id" value="{{ asset[0] }}">
-                  <input type="hidden" name="borrower" value="{{ user['username'] }}">
                   <input type="number" name="quantity" min="1" max="{{ asset[4] }}" value="1" class="qty-input">
                   <input type="date" name="start_date" value="{{ today }}">
                   <input type="date" name="end_date" value="{{ today }}">
                   <input type="text" name="purpose" value="Lab use" placeholder="Purpose" required>
-                  <button type="submit">Reserve</button>
+                  {% if user['role'] == 'STUDENT' %}
+                    <input type="hidden" name="requires_approval" value="1">
+                    <button type="submit">Request borrow</button>
+                  {% else %}
+                    <button type="submit">Reserve</button>
+                  {% endif %}
                 </form>
               </td>
               <td>
+                {% if user['role'] in ['ADMIN', 'TECHNICIAN'] %}
                 <form method="post" action="{{ url_for('checkout') }}" class="inline-form">
                   <input type="hidden" name="asset_id" value="{{ asset[0] }}">
                   <input type="hidden" name="borrower" value="{{ user['username'] }}">
@@ -108,6 +113,9 @@
                   <input type="time" name="due_time" value="17:00">
                   <button type="submit">Checkout</button>
                 </form>
+                {% else %}
+                  <span class="table-muted">Completed by staff after approval</span>
+                {% endif %}
               </td>
             </tr>
           {% else %}
