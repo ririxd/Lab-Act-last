@@ -7,7 +7,7 @@ from database import AssetStore
 
 
 def create_app(database_path=None):
-    app = Flask(__name__, template_folder="Front")
+    app = Flask(__name__, template_folder="HTML", static_folder="CSS + JS", static_url_path="/static")
     app.config["SECRET_KEY"] = "lab-tracker-dev"
     app.config["AUTH"] = AuthController(database_path)
     app.config["STORE"] = AssetStore(database_path)
