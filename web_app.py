@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, current_app, flash, redirect, render_template, request, session, url_for
 
 from auth_controller import AuthController
 from database import AssetStore
+
+load_dotenv()
 
 
 def create_app(database_path=None):

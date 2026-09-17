@@ -3,8 +3,12 @@ from __future__ import annotations
 import os
 import sqlite3
 
+from dotenv import load_dotenv
+
 from db_compat import DatabaseConnection, close_connection
 from database import DB_PATH, AssetStore
+
+load_dotenv()
 
 
 TABLES = (

@@ -67,6 +67,8 @@ The web app uses SQLite by default. To use PostgreSQL, set `DATABASE_URL` to a r
 $env:DATABASE_URL = "postgresql://USER:PASSWORD@HOST:5432/lab_assets"
 ```
 
+For persistent local configuration, copy `.env.example` to `.env` and replace the placeholders. `.env` is ignored by Git, and the local Flask app loads it automatically.
+
 Migrate the existing SQLite data before starting the web app:
 
 ```powershell

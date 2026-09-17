@@ -10,11 +10,13 @@ The Flask application supports PostgreSQL through the `DATABASE_URL` environment
 
 ## Configure PostgreSQL
 
-Set a PostgreSQL connection URL before starting the web app:
+Copy `.env.example` to `.env` and set a PostgreSQL connection URL before starting the web app. The `.env` file is ignored by Git.
 
 ```powershell
-$env:DATABASE_URL = "postgresql://lab_user:password@localhost:5432/lab_assets"
+Copy-Item .env.example .env
 ```
+
+Edit `.env` and replace the placeholders with the Supabase connection string and a new secret. The local Flask app and migration script load these values automatically.
 
 The database and user must already exist. The application creates its tables on startup.
 
@@ -23,7 +25,6 @@ The database and user must already exist. The application creates its tables on 
 Run the migration once, before starting the PostgreSQL-backed app:
 
 ```powershell
-$env:DATABASE_URL = "postgresql://lab_user:password@localhost:5432/lab_assets"
 & ".\.venv\Scripts\python.exe" migrate_sqlite_to_postgres.py
 ```
 
