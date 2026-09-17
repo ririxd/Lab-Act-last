@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from flask import Flask, current_app, flash, redirect, render_template, request, session, url_for
 
 from auth_controller import AuthController
@@ -8,7 +10,7 @@ from database import AssetStore
 
 def create_app(database_path=None):
     app = Flask(__name__, template_folder="HTML", static_folder="CSS + JS", static_url_path="/static")
-    app.config["SECRET_KEY"] = "lab-tracker-dev"
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "lab-tracker-dev")
     app.config["AUTH"] = AuthController(database_path)
     app.config["STORE"] = AssetStore(database_path)
 

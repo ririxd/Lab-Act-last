@@ -76,6 +76,10 @@ Migrate the existing SQLite data before starting the web app:
 
 See [POSTGRESQL_MIGRATION.md](POSTGRESQL_MIGRATION.md) for the full migration notes.
 
+## Deploy to Render
+
+This repository includes [render.yaml](render.yaml). In Render, create a new Blueprint from the GitHub repository and set `DATABASE_URL` to the Supabase PostgreSQL connection string in the service environment settings. Render generates `SECRET_KEY` automatically from the Blueprint configuration.
+
 ## Architecture
 
 The presentation layer is replaceable. Tkinter and Flask provide different interfaces, while `AuthController` and `AssetStore` contain the shared authentication, database, and business rules. Browser JavaScript is limited to interface behavior and does not replace server-side validation.
