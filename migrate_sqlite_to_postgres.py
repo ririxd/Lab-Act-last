@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import argparse
 
 from dotenv import load_dotenv
 
@@ -21,7 +22,7 @@ TABLES = (
 )
 
 
-def migrate(source_path=DB_PATH, target_url=None):
+def migrate(source_path=DB_PATH, target_url=None, reset_target=False):
     target_url = target_url or os.getenv("DATABASE_URL")
     if not target_url or not target_url.startswith(("postgres://", "postgresql://")):
         raise ValueError("Set DATABASE_URL to a PostgreSQL connection URL before migrating.")
@@ -32,6 +33,11 @@ def migrate(source_path=DB_PATH, target_url=None):
     target = target_manager.connect()
     try:
         AssetStore(target_url)
+        if reset_target:
+            target.execute(
+                "TRUNCATE TABLE audit_log, maintenance_records, checkouts, reservations, assets, users "
+                "RESTART IDENTITY CASCADE"
+            )
         for table, columns in TABLES:
             rows = source.execute(f"SELECT {', '.join(columns)} FROM {table}").fetchall()
             placeholders = ", ".join("?" for _ in columns)
@@ -52,5 +58,8 @@ def migrate(source_path=DB_PATH, target_url=None):
 
 
 if __name__ == "__main__":
-    migrate()
+    parser = argparse.ArgumentParser(description="Migrate the SQLite database to PostgreSQL.")
+    parser.add_argument("--reset", action="store_true", help="Clear the PostgreSQL target before importing SQLite data.")
+    args = parser.parse_args()
+    migrate(reset_target=args.reset)
     print("SQLite data migrated to PostgreSQL.")

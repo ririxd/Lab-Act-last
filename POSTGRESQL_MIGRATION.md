@@ -30,6 +30,12 @@ Run the migration once, before starting the PostgreSQL-backed app:
 
 The source is `lab_assets.db` by default. The migration preserves users, assets, reservations, checkouts, maintenance records, and audit logs, including their IDs. Run it against an empty PostgreSQL database to avoid duplicate-key conflicts.
 
+If a previous migration partially populated PostgreSQL, rerun with the explicit reset option. This clears the target tables before importing the SQLite backup:
+
+```powershell
+& ".\.venv\Scripts\python.exe" migrate_sqlite_to_postgres.py --reset
+```
+
 ## Start the web app
 
 ```powershell
