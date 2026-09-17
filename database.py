@@ -1,7 +1,8 @@
 from datetime import date
 import csv
 from pathlib import Path
-import sqlite3
+
+from db_compat import DatabaseConnection, IntegrityError
 
 
 DB_PATH = Path(__file__).resolve().parent / "lab_assets.db"
@@ -11,14 +12,12 @@ ASSET_STATUSES = ("Available", "Out of Stock", "Under Maintenance", "Lost", "Dam
 
 class AssetStore:
     def __init__(self, database_path=DB_PATH):
-        self.database_path = str(database_path or DB_PATH)
+        self.connection_manager = DatabaseConnection(database_path, DB_PATH)
+        self.database_path = self.connection_manager.database_path
         self.initialize()
 
     def connect(self):
-        connection = sqlite3.connect(self.database_path)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        return self.connection_manager.connect()
 
     def initialize(self):
         with self.connect() as connection:
@@ -92,17 +91,17 @@ class AssetStore:
                 """
             )
 
-            columns = {row[1] for row in connection.execute("PRAGMA table_info(assets)")}
+            columns = self.connection_manager.table_columns(connection, "assets")
             if "borrowed_quantity" not in columns:
                 connection.execute("ALTER TABLE assets ADD COLUMN borrowed_quantity INTEGER NOT NULL DEFAULT 0")
 
-            checkout_columns = {row[1] for row in connection.execute("PRAGMA table_info(checkouts)")}
+            checkout_columns = self.connection_manager.table_columns(connection, "checkouts")
             if "checkout_location" not in checkout_columns:
                 connection.execute("ALTER TABLE checkouts ADD COLUMN checkout_location TEXT NOT NULL DEFAULT ''")
             if "due_time" not in checkout_columns:
                 connection.execute("ALTER TABLE checkouts ADD COLUMN due_time TEXT NOT NULL DEFAULT '17:00'")
 
-            reservation_columns = {row[1] for row in connection.execute("PRAGMA table_info(reservations)")}
+            reservation_columns = self.connection_manager.table_columns(connection, "reservations")
             if "reservation_location" not in reservation_columns:
                 connection.execute("ALTER TABLE reservations ADD COLUMN reservation_location TEXT NOT NULL DEFAULT ''")
             connection.execute("UPDATE reservations SET status = 'ACTIVE' WHERE status IS NULL OR status = ''")
@@ -143,7 +142,7 @@ class AssetStore:
                     (asset_tag, name, category, quantity, borrowed_quantity, location, condition or "Good"),
                 )
                 self._audit(connection, "system", "ASSET_ADDED", asset_tag)
-        except sqlite3.IntegrityError as error:
+        except IntegrityError as error:
             raise ValueError("Asset tag already exists.") from error
 
     def assets(self, search=""):
@@ -225,11 +224,11 @@ class AssetStore:
             status = "PENDING" if requires_approval else "ACTIVE"
             cursor = connection.execute(
                 "INSERT INTO reservations (asset_id, borrower, quantity, start_date, end_date, purpose, reservation_location, status) "
-                "SELECT ?, ?, ?, ?, ?, ?, location, ? FROM assets WHERE id = ?",
+                "SELECT ?, ?, ?, ?, ?, ?, location, ? FROM assets WHERE id = ? RETURNING id",
                 (asset_id, borrower, quantity, start_iso, end_iso, purpose, status, asset_id),
             )
             self._audit(connection, borrower, "RESERVATION_CREATED", f"asset_id={asset_id}, status={status}")
-            return cursor.lastrowid
+            return cursor.fetchone()[0]
 
     def approve_reservation(self, reservation_id, approved=True):
         with self.connect() as connection:
@@ -331,9 +330,7 @@ class AssetStore:
 
     def registered_students(self):
         with self.connect() as connection:
-            table_exists = connection.execute(
-                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
-            ).fetchone()
+            table_exists = self.connection_manager.table_exists(connection, "users")
             if not table_exists:
                 return []
             return [row[0] for row in connection.execute(

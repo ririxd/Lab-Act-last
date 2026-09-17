@@ -2,10 +2,10 @@ import hashlib
 import math
 import os
 import re
-import sqlite3
 import time
 
 from database import DB_PATH
+from db_compat import DatabaseConnection, IntegrityError
 
 
 PASSWORD_PATTERN = re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$")
@@ -14,13 +14,12 @@ EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
 class AuthController:
     def __init__(self, database_path=DB_PATH):
-        self.database_path = str(database_path or DB_PATH)
+        self.connection_manager = DatabaseConnection(database_path, DB_PATH)
+        self.database_path = self.connection_manager.database_path
         self.initialize()
 
     def connect(self):
-        connection = sqlite3.connect(self.database_path)
-        connection.row_factory = sqlite3.Row
-        return connection
+        return self.connection_manager.connect()
 
     def initialize(self):
         with self.connect() as connection:
@@ -39,7 +38,7 @@ class AuthController:
                 )
                 """
             )
-            columns = {row[1] for row in connection.execute("PRAGMA table_info(users)")}
+            columns = self.connection_manager.table_columns(connection, "users")
             if "locked_until" not in columns:
                 connection.execute("ALTER TABLE users ADD COLUMN locked_until REAL NOT NULL DEFAULT 0")
 
@@ -87,7 +86,7 @@ class AuthController:
                     (username, email_or_message, password_hash, salt, role),
                 )
             return True, "Registration successful."
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             return False, "Username or email is already registered."
 
     def login(self, username, password):
