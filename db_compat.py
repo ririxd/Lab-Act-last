@@ -33,6 +33,9 @@ class _HybridRow(tuple):
             return super().__getitem__(self.columns.index(key))
         return super().__getitem__(key)
 
+    def keys(self):
+        return self.columns
+
 
 class _PostgresCursor:
     def __init__(self, cursor):

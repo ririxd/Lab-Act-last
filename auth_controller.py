@@ -110,7 +110,8 @@ class AuthController:
                 )
                 return False, "Invalid username or password." if attempts < 3 else "Account locked for 30 seconds after three failed attempts.", None
             connection.execute("UPDATE users SET failed_attempts = 0, locked = 0, locked_until = 0 WHERE id = ?", (user["id"],))
-            return True, "Login successful.", dict(user)
+            user_data = {column: user[column] for column in user.keys()}
+            return True, "Login successful.", user_data
 
     def lockout_remaining(self, username):
         with self.connect() as connection:
