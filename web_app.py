@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 
 from dotenv import load_dotenv
+from datetime import date
+
 from flask import (
     Flask,
     current_app,
@@ -194,6 +196,7 @@ def create_app(database_path=None):
             user=user,
             assets=assets,
             pending=pending,
+            today=date.today().isoformat(),
         )
 
     @app.route("/reserve", methods=["POST"])
@@ -217,10 +220,12 @@ def create_app(database_path=None):
                 ),
             )
 
-            flash(
-                "Reservation created.",
-                "success",
+            message = (
+                "Borrow request submitted for staff review."
+                if user["role"] == "STUDENT"
+                else "Reservation created."
             )
+            flash(message, "success")
 
         except ValueError as exc:
             flash(str(exc), "error")
@@ -317,11 +322,20 @@ def create_app(database_path=None):
         checkout_rows = current_app.config["STORE"].borrower_checkouts(
             user["username"]
         )
+        reservation_rows = current_app.config["STORE"].borrower_reservations(
+            user["username"]
+        )
+        request_summary = {
+            "pending": sum(row[9] == "PENDING" for row in reservation_rows),
+            "approved": sum(row[9] == "ACTIVE" for row in reservation_rows),
+        }
 
         return render_template(
             "student.html",
             user=user,
             checkouts=checkout_rows,
+            reservations=reservation_rows,
+            request_summary=request_summary,
         )
 
     @app.route("/history")

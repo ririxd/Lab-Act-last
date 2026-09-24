@@ -1,24 +1,49 @@
 {% extends 'base.html' %}
 {% block title %}My Borrowings{% endblock %}
 {% block content %}
-  <section class="panel">
-    <div class="panel-header">
+  <section class="panel student-page">
+    <div class="page-heading">
       <div>
         <p class="eyebrow">Student dashboard</p>
-        <h1>{{ user['username'] }}</h1>
+        <h1>My equipment</h1>
+        <p class="page-subtitle">Track your issued equipment and the status of every borrow request.</p>
+      </div>
+      <div class="heading-meta">Signed in as <strong>{{ user['username'] }}</strong></div>
+    </div>
+
+    <div class="metric-grid student-metrics">
+      <div class="metric-card metric-card-accent">
+        <span class="metric-label">Currently borrowed</span>
+        <strong class="metric-value">{{ checkouts|length }}</strong>
+        <span class="metric-note">Active equipment records</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Awaiting a decision</span>
+        <strong class="metric-value">{{ request_summary['pending'] }}</strong>
+        <span class="metric-note">Requests staff still need to review</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Approved requests</span>
+        <strong class="metric-value">{{ request_summary['approved'] }}</strong>
+        <span class="metric-note">Permitted reservations</span>
       </div>
     </div>
 
-    <div class="table-wrap card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Issued to you</p>
+        <h2>Active borrowings</h2>
+      </div>
+    </div>
+    <div class="table-wrap card student-table">
       <table>
         <thead>
           <tr>
-            <th>ID</th>
             <th>Asset</th>
-            <th>Name</th>
-            <th>Qty</th>
-            <th>Checked out</th>
-            <th>Due</th>
+            <th>Details</th>
+            <th>Quantity</th>
+            <th>Issued</th>
+            <th>Return by</th>
             <th>Location</th>
             <th>Action</th>
           </tr>
@@ -26,9 +51,8 @@
         <tbody>
           {% for checkout in checkouts %}
             <tr>
-              <td>{{ checkout[0] }}</td>
-              <td>{{ checkout[1] }}</td>
-              <td>{{ checkout[2] }}</td>
+              <td><strong>{{ checkout[2] }}</strong><br><span class="table-muted">{{ checkout[1] }}</span></td>
+              <td><span class="detail-label">Category</span>{{ checkout[8] }}<br><span class="detail-label">Condition</span>{{ checkout[9] }}</td>
               <td>{{ checkout[3] }}</td>
               <td>{{ checkout[4] }}</td>
               <td>{{ checkout[5] }} @ {{ checkout[6] }}</td>
@@ -40,6 +64,37 @@
                 </form>
               </td>
             </tr>
+          {% else %}
+            <tr><td colspan="7" class="empty-state">You have no equipment checked out right now.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Request history</p>
+        <h2>Borrow requests</h2>
+      </div>
+      <span class="section-caption">Staff can permit or deny requests before checkout.</span>
+    </div>
+    <div class="table-wrap card student-table">
+      <table>
+        <thead>
+          <tr><th>Asset</th><th>Details</th><th>Quantity</th><th>Requested dates</th><th>Purpose</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservations %}
+          <tr>
+            <td><strong>{{ reservation[2] }}</strong><br><span class="table-muted">{{ reservation[1] }}</span></td>
+            <td><span class="detail-label">Category</span>{{ reservation[3] }}<br><span class="detail-label">Collection point</span>{{ reservation[8] }}</td>
+            <td>{{ reservation[4] }}</td>
+            <td>{{ reservation[5] }}<br><span class="table-muted">to {{ reservation[6] }}</span></td>
+            <td>{{ reservation[7] }}</td>
+            <td><span class="status-badge status-{{ reservation[9]|lower }}">{{ reservation[9]|title }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="empty-state">You have not submitted a borrow request yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

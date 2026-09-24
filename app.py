@@ -78,7 +78,7 @@ class AssetTracker:
         ttk.Button(toolbar, text="Update Status", command=self.update_status_selected).pack(side="right", padx=4)
         ttk.Button(toolbar, text="Activity Log", command=self.show_activity_log).pack(side="right", padx=4)
 
-        columns = ("id", "tag", "name", "category", "quantity", "borrowable", "location", "condition", "status")
+        columns = ("id", "tag", "name", "category", "quantity", "borrowed", "borrowable", "location", "condition", "status")
         self.asset_tree = ttk.Treeview(self.root, columns=columns, show="headings", height=12)
         headings = ("ID", "Asset Tag", "Name", "Category", "Total Qty", "Borrowed", "Borrowable", "Location", "Condition", "Status")
         for column, heading in zip(columns, headings):
@@ -86,6 +86,7 @@ class AssetTracker:
             self.asset_tree.column(column, anchor="center", width=120)
         self.asset_tree.column("id", width=45)
         self.asset_tree.column("name", width=220)
+        self.asset_tree.column("borrowed", width=90)
         self.asset_tree.column("borrowable", width=100)
         self.asset_tree.column("quantity", width=90)
         self.asset_tree.bind("<<TreeviewSelect>>", self.select_asset)

@@ -241,18 +241,22 @@ class AssetStore:
                 "a.borrowed_quantity + COALESCE((SELECT SUM(c.quantity) FROM checkouts c "
                 "WHERE c.asset_id = a.id AND c.returned_at IS NULL), 0) AS borrowed_quantity, "
 
-                "CASE WHEN a.status = 'Available' THEN GREATEST(0, a.quantity - "
+                "CASE WHEN a.status != 'Available' OR a.quantity - "
                 "a.borrowed_quantity - COALESCE((SELECT SUM(c.quantity) FROM checkouts c "
                 "WHERE c.asset_id = a.id AND c.returned_at IS NULL), 0) - "
                 "COALESCE((SELECT SUM(r.quantity) FROM reservations r "
                 "WHERE r.asset_id = a.id "
                 "AND r.status = 'ACTIVE' "
                 "AND r.start_date <= ? "
-                "AND r.end_date >= ?), 0) - "
+                "AND r.end_date >= ?), 0) <= 0 THEN 0 "
+                "ELSE a.quantity - a.borrowed_quantity - "
                 "COALESCE((SELECT SUM(c.quantity) FROM checkouts c "
-                "WHERE c.asset_id = a.id "
-                "AND c.returned_at IS NULL), 0)) "
-                "ELSE 0 END AS borrowable_quantity, "
+                "WHERE c.asset_id = a.id AND c.returned_at IS NULL), 0) - "
+                "COALESCE((SELECT SUM(r.quantity) FROM reservations r "
+                "WHERE r.asset_id = a.id "
+                "AND r.status = 'ACTIVE' "
+                "AND r.start_date <= ? "
+                "AND r.end_date >= ?), 0) END AS borrowable_quantity, "
 
                 "a.location, a.condition, "
                 "CASE WHEN a.status = 'Available' AND "
@@ -274,6 +278,8 @@ class AssetStore:
                 "ORDER BY name",
 
                 (
+                    today,
+                    today,
                     today,
                     today,
                     today,
@@ -474,6 +480,11 @@ class AssetStore:
             if not reservation:
                 raise ValueError(
                     "Reservation not found."
+                )
+
+            if reservation["status"] != "PENDING":
+                raise ValueError(
+                    "Only pending borrow requests can be reviewed."
                 )
 
             status = (
@@ -736,12 +747,26 @@ class AssetStore:
             return connection.execute(
                 "SELECT c.id, a.asset_tag, a.name, c.quantity, "
                 "c.checked_out_at, c.due_date, c.due_time, "
-                "c.checkout_location "
+                "c.checkout_location, a.category, a.condition "
                 "FROM checkouts c "
                 "JOIN assets a ON a.id = c.asset_id "
                 "WHERE c.borrower = ? "
                 "AND c.returned_at IS NULL "
                 "ORDER BY c.due_date",
+                (borrower,),
+            ).fetchall()
+
+    def borrower_reservations(self, borrower):
+        """Return a student's requests, including their review status and asset details."""
+        with self.connect() as connection:
+            return connection.execute(
+                "SELECT r.id, a.asset_tag, a.name, a.category, r.quantity, "
+                "r.start_date, r.end_date, r.purpose, r.reservation_location, "
+                "r.status, r.created_at "
+                "FROM reservations r "
+                "JOIN assets a ON a.id = r.asset_id "
+                "WHERE r.borrower = ? "
+                "ORDER BY r.created_at DESC",
                 (borrower,),
             ).fetchall()
 

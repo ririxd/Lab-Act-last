@@ -69,6 +69,7 @@
             <th>Name</th>
             <th>Category</th>
             <th>Total</th>
+            <th>Borrowed</th>
             <th>Borrowable</th>
             <th>Location</th>
             <th>Status</th>
@@ -85,20 +86,21 @@
               <td>{{ asset[3] }}</td>
               <td>{{ asset[4] }}</td>
               <td>{{ asset[5] }}</td>
+              <td>{{ asset[6] }}</td>
               <td>{{ asset[7] }}</td>
               <td>{{ asset[9] }}</td>
               <td>
                 <form method="post" action="{{ url_for('reserve') }}" class="inline-form">
                   <input type="hidden" name="asset_id" value="{{ asset[0] }}">
-                  <input type="number" name="quantity" min="1" max="{{ asset[4] }}" value="1" class="qty-input">
+                  <input type="number" name="quantity" min="1" max="{{ asset[6] }}" value="1" class="qty-input" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
                   <input type="date" name="start_date" value="{{ today }}">
                   <input type="date" name="end_date" value="{{ today }}">
                   <input type="text" name="purpose" value="Lab use" placeholder="Purpose" required>
                   {% if user['role'] == 'STUDENT' %}
                     <input type="hidden" name="requires_approval" value="1">
-                    <button type="submit">Request borrow</button>
+                    <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Request borrow</button>
                   {% else %}
-                    <button type="submit">Reserve</button>
+                    <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Reserve</button>
                   {% endif %}
                 </form>
               </td>
@@ -107,11 +109,11 @@
                 <form method="post" action="{{ url_for('checkout') }}" class="inline-form">
                   <input type="hidden" name="asset_id" value="{{ asset[0] }}">
                   <input type="hidden" name="borrower" value="{{ user['username'] }}">
-                  <input type="number" name="quantity" min="1" max="{{ asset[5] }}" value="1" class="qty-input">
+                  <input type="number" name="quantity" min="1" max="{{ asset[6] }}" value="1" class="qty-input" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
                   <input type="date" name="due_date" value="{{ today }}">
                   <input type="text" name="checkout_location" value="{{ asset[7] }}" required>
                   <input type="time" name="due_time" value="17:00">
-                  <button type="submit">Checkout</button>
+                  <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Checkout</button>
                 </form>
                 {% else %}
                   <span class="table-muted">Completed by staff after approval</span>
@@ -119,7 +121,7 @@
               </td>
             </tr>
           {% else %}
-            <tr><td colspan="10" class="empty-state">No assets have been added yet.</td></tr>
+            <tr><td colspan="11" class="empty-state">No assets have been added yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -127,7 +129,7 @@
 
     {% if pending %}
     <div class="table-wrap card">
-      <h2>Pending reservations</h2>
+      <h2>Borrow requests awaiting review</h2>
       <table>
         <thead>
           <tr><th>ID</th><th>Asset</th><th>Borrower</th><th>Qty</th><th>Dates</th><th>Purpose</th><th>Action</th></tr>
@@ -143,8 +145,8 @@
             <td>{{ item[7] }}</td>
             <td>
               <form method="post" action="{{ url_for('approve_reservation', reservation_id=item[0]) }}" class="inline-form">
-                <button type="submit" name="decision" value="approve">Approve</button>
-                <button type="submit" name="decision" value="reject" class="danger">Reject</button>
+                <button type="submit" name="decision" value="approve">Permit</button>
+                <button type="submit" name="decision" value="reject" class="danger">Deny</button>
               </form>
             </td>
           </tr>
