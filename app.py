@@ -80,7 +80,7 @@ class AssetTracker:
 
         columns = ("id", "tag", "name", "category", "quantity", "borrowed", "borrowable", "location", "condition", "status")
         self.asset_tree = ttk.Treeview(self.root, columns=columns, show="headings", height=12)
-        headings = ("ID", "Asset Tag", "Name", "Category", "Total Qty", "Borrowed", "Borrowable", "Location", "Condition", "Status")
+        headings = ("ID", "Asset Tag", "Name", "Category", "Total Qty", "Borrowed", "Available to Borrow", "Location", "Condition", "Status")
         for column, heading in zip(columns, headings):
             self.asset_tree.heading(column, text=heading)
             self.asset_tree.column(column, anchor="center", width=120)
