@@ -31,6 +31,28 @@
 
     <div class="section-heading">
       <div>
+        <p class="eyebrow">New request</p>
+        <h2>Reserve equipment</h2>
+      </div>
+      <span class="section-caption">Choose one available item for staff approval.</span>
+    </div>
+    <form method="post" action="{{ url_for('reserve') }}" class="card reserve-form">
+      <label>
+        <span>Equipment</span>
+        <select name="asset_id" required>
+          <option value="">Choose equipment</option>
+          {% for asset in assets %}
+            <option value="{{ asset[0] }}" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
+              {{ asset[2] }} &mdash; {{ asset[1] }} ({{ asset[6] }} available)
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="primary-action">Send request</button>
+    </form>
+
+    <div class="section-heading">
+      <div>
         <p class="eyebrow">Issued to you</p>
         <h2>Active borrowings</h2>
       </div>
@@ -81,7 +103,7 @@
     <div class="table-wrap card student-table">
       <table>
         <thead>
-          <tr><th>Asset</th><th>Details</th><th>Quantity</th><th>Requested dates</th><th>Purpose</th><th>Status</th></tr>
+          <tr><th>Asset</th><th>Details</th><th>Quantity</th><th>Status</th></tr>
         </thead>
         <tbody>
           {% for reservation in reservations %}
@@ -89,12 +111,10 @@
             <td><strong>{{ reservation[2] }}</strong><br><span class="table-muted">{{ reservation[1] }}</span></td>
             <td><span class="detail-label">Category</span>{{ reservation[3] }}<br><span class="detail-label">Collection point</span>{{ reservation[8] }}</td>
             <td>{{ reservation[4] }}</td>
-            <td>{{ reservation[5] }}<br><span class="table-muted">to {{ reservation[6] }}</span></td>
-            <td>{{ reservation[7] }}</td>
             <td><span class="status-badge status-{{ reservation[9]|lower }}">{{ reservation[9]|title }}</span></td>
           </tr>
           {% else %}
-          <tr><td colspan="6" class="empty-state">You have not submitted a borrow request yet.</td></tr>
+          <tr><td colspan="4" class="empty-state">You have not submitted a borrow request yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

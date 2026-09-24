@@ -153,6 +153,9 @@ def create_app(database_path=None):
         if not user:
             return redirect(url_for("login"))
 
+        if user["role"] == "STUDENT":
+            return redirect(url_for("student"))
+
         if (
             request.method == "POST"
             and request.form.get("action") == "add_asset"
@@ -183,6 +186,23 @@ def create_app(database_path=None):
 
             return redirect(url_for("inventory"))
 
+        if (
+            request.method == "POST"
+            and request.form.get("action") == "add_student"
+        ):
+            if user.get("role") != "ADMIN":
+                flash("Only administrators can register student accounts.", "error")
+                return redirect(url_for("inventory"))
+
+            success, message = current_app.config["AUTH"].register(
+                request.form.get("username", ""),
+                request.form.get("email", ""),
+                request.form.get("password", ""),
+                "STUDENT",
+            )
+            flash(message, "success" if success else "error")
+            return redirect(url_for("inventory"))
+
         assets = current_app.config["STORE"].assets()
 
         pending = (
@@ -196,7 +216,7 @@ def create_app(database_path=None):
             user=user,
             assets=assets,
             pending=pending,
-            today=date.today().isoformat(),
+            students=current_app.config["STORE"].registered_students(),
         )
 
     @app.route("/reserve", methods=["POST"])
@@ -206,18 +226,19 @@ def create_app(database_path=None):
         if not user:
             return redirect(url_for("login"))
 
+        if user["role"] != "STUDENT":
+            flash("Students submit equipment requests from the student dashboard.", "error")
+            return redirect(url_for("inventory"))
+
         try:
             current_app.config["STORE"].reserve(
                 request.form.get("asset_id"),
                 user["username"],
-                request.form.get("quantity", 1),
-                request.form.get("start_date"),
-                request.form.get("end_date"),
-                request.form.get("purpose", ""),
-                requires_approval=(
-                    user["role"] == "STUDENT"
-                    or bool(request.form.get("requires_approval"))
-                ),
+                1,
+                date.today().isoformat(),
+                date.today().isoformat(),
+                "Student equipment request",
+                requires_approval=True,
             )
 
             message = (
@@ -230,7 +251,7 @@ def create_app(database_path=None):
         except ValueError as exc:
             flash(str(exc), "error")
 
-        return redirect(url_for("inventory"))
+        return redirect(url_for("student"))
 
     @app.route("/checkout", methods=["POST"])
     def checkout():
@@ -250,10 +271,10 @@ def create_app(database_path=None):
             current_app.config["STORE"].checkout(
                 request.form.get("asset_id"),
                 request.form.get("borrower", ""),
-                request.form.get("quantity", 1),
-                request.form.get("due_date"),
+                1,
+                date.today().isoformat(),
                 request.form.get("checkout_location", ""),
-                request.form.get("due_time", "17:00"),
+                "17:00",
             )
 
             flash(
@@ -336,6 +357,7 @@ def create_app(database_path=None):
             checkouts=checkout_rows,
             reservations=reservation_rows,
             request_summary=request_summary,
+            assets=current_app.config["STORE"].assets(),
         )
 
     @app.route("/history")
@@ -344,6 +366,10 @@ def create_app(database_path=None):
 
         if not user:
             return redirect(url_for("login"))
+
+        if not management_user():
+            flash("Only administrators and technicians can view the history log.", "error")
+            return redirect(url_for("student"))
 
         log_rows = current_app.config["STORE"].activity_log(
             limit=50

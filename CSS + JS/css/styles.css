@@ -158,6 +158,8 @@ body {
 .asset-form { padding: 1.25rem; }
 .asset-form-fields { display: grid; grid-template-columns: 1.1fr 1.4fr 1.1fr 0.75fr 1.2fr; gap: 0.8rem; }
 .asset-form .primary-action { margin-top: 1rem; min-width: 140px; }
+.student-registration-form, .reserve-form { display: grid; grid-template-columns: repeat(3, 1fr) auto; align-items: end; gap: 0.8rem; }
+.reserve-form { grid-template-columns: minmax(16rem, 34rem) auto; }
 .inventory-heading { margin-top: 1rem; }
 .inventory-surface { padding: 0.85rem; }
 .empty-state { padding: 2.5rem 1rem; color: var(--muted); text-align: center; }
@@ -297,10 +299,12 @@ thead th {
   .page-heading, .section-heading { align-items: flex-start; flex-direction: column; }
   .metric-grid { grid-template-columns: 1fr; }
   .asset-form-fields { grid-template-columns: repeat(2, 1fr); }
+  .student-registration-form { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 520px) {
   .brand { min-width: 0; }
   .brand strong { font-size: 0.9rem; }
   .account-details { display: none; }
   .asset-form-fields { grid-template-columns: 1fr; }
+  .student-registration-form, .reserve-form { grid-template-columns: 1fr; }
 }

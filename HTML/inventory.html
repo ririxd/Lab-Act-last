@@ -53,6 +53,23 @@
     </form>
     {% endif %}
 
+    {% if user['role'] == 'ADMIN' %}
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Student accounts</p>
+        <h2>Register a student</h2>
+      </div>
+      <span class="section-caption">Create a student account for equipment checkout</span>
+    </div>
+    <form method="post" action="{{ url_for('inventory') }}" class="card student-registration-form">
+      <input type="hidden" name="action" value="add_student">
+      <label><span>Student name</span><input type="text" name="username" placeholder="Student username" required></label>
+      <label><span>Email</span><input type="email" name="email" placeholder="student@example.com" required></label>
+      <label><span>Temporary password</span><input type="password" name="password" placeholder="At least 8 characters" required></label>
+      <button type="submit" class="primary-action">Register student</button>
+    </form>
+    {% endif %}
+
     <div class="section-heading inventory-heading">
       <div>
         <p class="eyebrow">Live register</p>
@@ -73,7 +90,6 @@
             <th>Available to borrow</th>
             <th>Location</th>
             <th>Status</th>
-            <th>Reserve</th>
             <th>Checkout</th>
           </tr>
         </thead>
@@ -90,30 +106,15 @@
               <td>{{ asset[7] }}</td>
               <td>{{ asset[9] }}</td>
               <td>
-                <form method="post" action="{{ url_for('reserve') }}" class="inline-form">
-                  <input type="hidden" name="asset_id" value="{{ asset[0] }}">
-                  <input type="number" name="quantity" min="1" max="{{ asset[6] }}" value="1" class="qty-input" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
-                  <input type="date" name="start_date" value="{{ today }}">
-                  <input type="date" name="end_date" value="{{ today }}">
-                  <input type="text" name="purpose" value="Lab use" placeholder="Purpose" required>
-                  {% if user['role'] == 'STUDENT' %}
-                    <input type="hidden" name="requires_approval" value="1">
-                    <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Request borrow</button>
-                  {% else %}
-                    <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Reserve</button>
-                  {% endif %}
-                </form>
-              </td>
-              <td>
                 {% if user['role'] in ['ADMIN', 'TECHNICIAN'] %}
                 <form method="post" action="{{ url_for('checkout') }}" class="inline-form">
                   <input type="hidden" name="asset_id" value="{{ asset[0] }}">
-                  <input type="hidden" name="borrower" value="{{ user['username'] }}">
-                  <input type="number" name="quantity" min="1" max="{{ asset[6] }}" value="1" class="qty-input" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
-                  <input type="date" name="due_date" value="{{ today }}">
-                  <input type="text" name="checkout_location" value="{{ asset[7] }}" required>
-                  <input type="time" name="due_time" value="17:00">
-                  <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>Checkout</button>
+                  <input type="hidden" name="checkout_location" value="{{ asset[7] }}">
+                  <select name="borrower" required {% if asset[6] < 1 or asset[9] != 'Available' %}disabled{% endif %}>
+                    <option value="">Select student</option>
+                    {% for student in students %}<option value="{{ student }}">{{ student }}</option>{% endfor %}
+                  </select>
+                  <button type="submit" {% if asset[6] < 1 or asset[9] != 'Available' or not students %}disabled{% endif %}>Checkout</button>
                 </form>
                 {% else %}
                   <span class="table-muted">Completed by staff after approval</span>
@@ -121,7 +122,7 @@
               </td>
             </tr>
           {% else %}
-            <tr><td colspan="11" class="empty-state">No assets have been added yet.</td></tr>
+            <tr><td colspan="10" class="empty-state">No assets have been added yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -132,7 +133,7 @@
       <h2>Borrow requests awaiting review</h2>
       <table>
         <thead>
-          <tr><th>ID</th><th>Asset</th><th>Borrower</th><th>Qty</th><th>Dates</th><th>Purpose</th><th>Action</th></tr>
+          <tr><th>ID</th><th>Asset</th><th>Student</th><th>Qty</th><th>Action</th></tr>
         </thead>
         <tbody>
           {% for item in pending %}
@@ -141,8 +142,6 @@
             <td>{{ item[1] }} / {{ item[2] }}</td>
             <td>{{ item[3] }}</td>
             <td>{{ item[4] }}</td>
-            <td>{{ item[5] }} - {{ item[6] }}</td>
-            <td>{{ item[7] }}</td>
             <td>
               <form method="post" action="{{ url_for('approve_reservation', reservation_id=item[0]) }}" class="inline-form">
                 <button type="submit" name="decision" value="approve">Permit</button>
