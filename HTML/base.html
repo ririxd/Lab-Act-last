@@ -19,7 +19,6 @@
       {% if session.get('user') %}
         <nav class="nav" aria-label="Primary navigation">
           <a class="nav-link active" href="{{ url_for('inventory') }}">Inventory</a>
-          <a class="nav-link" href="{{ url_for('student') }}">My Borrowings</a>
           <a class="nav-link" href="{{ url_for('history') }}">History</a>
           {% if session['user']['role'] in ['ADMIN', 'TECHNICIAN'] %}
           <a class="nav-link" href="{{ url_for('export_inventory') }}">Export CSV</a>
